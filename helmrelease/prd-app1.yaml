@@ -1,0 +1,90 @@
+apiVersion: helm.fluxcd.io/v1
+kind: HelmRelease
+metadata:
+  name: app1-eck-resource
+  namespace: default
+spec:
+  chart:
+    name: app1-eck-resource
+    repository: http://3.38.7.222:9080
+    version: 1.0.0
+  helmVersion: v3
+  releaseName: app1-eck-resource
+  targetNamespace: lma
+  values:
+    elasticsearch:
+      adminPassword: tacoword
+      count: 3
+      enabled: true
+      image:
+        repository: docker.elastic.co/elasticsearch/elasticsearch
+        tag: 7.5.1
+      nodeSets:
+        client:
+          count: "1"
+          enabled: false
+          javaOpts: -Xms2g -Xmx2g
+          limitCpu: "2"
+          limitMem: 4Gi
+          nodeSelector:
+            taco-lma: enabled
+          pvc:
+            size: 0.5Gi
+            storageClassName: ceph
+        hotdata:
+          count: 3
+          enabled: true
+          javaOpts: -Xms6g -Xmx6g
+          limitCpu: "2"
+          limitMem: 8Gi
+          nodeSelector:
+            taco-lma: enabled
+          pvc:
+            size: 10Gi
+            storageClassName: rbd
+        master:
+          count: 3
+          enabled: true
+          javaOpts: -Xms3g -Xmx3g
+          limitCpu: "2"
+          limitMem: 4Gi
+          nodeSelector:
+            taco-lma: enabled
+          pvc:
+            size: 1Gi
+            storageClassName: rbd
+        warmdata:
+          count: 2
+          enabled: false
+          javaOpts: -Xms2g -Xmx2g
+          limitCpu: "1"
+          limitMem: 2Gi
+          nodeSelector:
+            taco-lma: enabled
+          pvc:
+            size: 100Gi
+            storageClassName: ceph
+      version: 7.5.1
+    kibana:
+      enabled: true
+      http:
+        service:
+          spec:
+            ports:
+            - name: http
+              nodePort: 30005
+              port: 5601
+              targetPort: 5601
+            type: NodePort
+        tls:
+          selfSignedCertificate:
+            disabled: true
+      image:
+        repository: docker.elastic.co/kibana/kibana
+        tag: 7.5.1
+      limitCpu: "2"
+      limitMem: 8Gi
+      nodeSelector:
+        taco-lma: enabled
+      version: 7.5.1
+  wait: true
