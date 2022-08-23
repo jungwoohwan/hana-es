@@ -1,0 +1,145 @@
+## override Chart Name
+nameOverride: app1
+
+elasticsearch:
+  enabled: true
+
+  # admin account's password is generated randomly by default.
+  # if you want to set the password of admin account, set below value. 
+  adminPassword: tacoword
+
+  image:
+    repository: docker.elastic.co/elasticsearch/elasticsearch
+    tag: 7.5.1
+
+  ## empty {} means podDisruptionBudget disabled
+  podDisruptionBudget:
+    enabled: false
+
+  ## http setting for Elasticsearch
+  #http:
+  #  service:
+  #    spec:
+  #      type: ClusterIP
+  #      ports:
+  #      - name: http
+  #        targetPort: 9200
+  #        port: 9200
+
+  nodeSets:
+    master:
+      enabled: true
+      nodeSelector:
+        taco-lma: enabled
+      ## Elasticsearch instance count 
+      count: 3
+      ## Elasticsearch Config
+      config:
+        node.master: true
+        node.data: false
+        node.ingest: false
+        node.store.allow_mmap: false
+      ## JVM Memory config
+      javaOpts: "-Xms3g -Xmx3g"
+      ## Resource Max
+      limitCpu: 2
+      limitMem: 4Gi
+      ## Storage definition for Elasticsearch instance.
+      ## Must be set
+      ##
+      pvc:
+        accessModes: "ReadWriteOnce"
+        storageClassName: rbd
+        size: 1Gi
+    hotdata: 
+      enabled: true
+      nodeSelector:
+        taco-lma: enabled
+      ## Elasticsearch instance count 
+      count: 3
+      ## Elasticsearch Config
+      config:
+        node.data: true
+        node.ingest: true
+        node.master: false
+        node.store.allow_mmap: false
+        node.attr.hotwarm: hot
+      javaOpts: "-Xms6g -Xmx6g"
+      limitCpu: 2
+      limitMem: 8Gi
+      pvc:
+        accessModes: "ReadWriteOnce"
+        storageClassName: rbd
+        size: 10Gi
+    warmdata: 
+      enabled: false
+      # nodeSelector:
+      #   taco-lma: enabled
+      ## Elasticsearch instance count 
+      count: 2
+      ## Elasticsearch Config
+      config:
+        node.data: true
+        node.ingest: true
+        node.master: false
+        node.store.allow_mmap: false
+        node.attr.hotwarm: warm 
+      javaOpts: "-Xms256m -Xmx256m"
+      limitCpu: 1
+      limitMem: 0.5Gi
+      pvc:
+        accessModes: "ReadWriteOnce"
+        storageClassName: rbd
+        size: 10Gi
+    client: 
+      enabled: false
+      # nodeSelector:
+      #   taco-lma: enabled
+      ## Elasticsearch instance count 
+      count: 1
+      ## Elasticsearch Config
+      config:
+        node.data: false
+        node.ingest: false
+        node.master: false
+        node.store.allow_mmap: false 
+      javaOpts: "-Xms1g -Xmx1g"
+      limitCpu: 1
+      limitMem: 2Gi
+      pvc:
+        accessModes: "ReadWriteOnce"
+        storageClassName: rbd
+        size: 10Gi
+kibana:
+  enabled: true
+  image:
+    repository: docker.elastic.co/kibana/kibana
+    tag: 7.5.1
+
+  server: {}
+  #   basePath: /kibana
+  # readinessPath: /kibana/login
+
+  limitCpu: 2
+  limitMem: 8Gi
+  ## container resources
+  # resources:
+  #   limits:
+  #     cpu:
+  #     memory:
+  ## http setting for Kibana instance
+  http:
+    service:
+      spec:
+        type: NodePort
+        ports:
+        - name: kibana-dashboard-kb-http
+          nodePort: 30005
+          targetPort: 5601
+          port: 5601
+  nodeSelector:
+    taco-lma: enabled
+  #  tls:
+  #    certificate: {}
+  #    selfSignedCertificate:
+  #      disabled: true
